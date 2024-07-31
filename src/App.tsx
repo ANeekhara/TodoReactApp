@@ -4,21 +4,46 @@ import ProjectsSidebar from './components/ProjectsSidebar.tsx';
 import './App.css'
 import NewTask from './components/NewTask.tsx';
 import NoTaskSelected from './components/NoTasksSelected.tsx';
-import { TaskData } from './types/TaskTypes.ts';
+import { SubTaskData, TaskData } from './types/TaskTypes.ts';
 import SelectedTask from './components/SelectedTask.tsx';
 
 
 interface TaskState {
   selectedTaskId: number | undefined | null;
   tasks: TaskData[];
+  subTasks: SubTaskData[];
 }
 
 function App() {
   const [taskState, setTaskState] = useState<TaskState>({
     selectedTaskId: undefined,
-    tasks: []
+    tasks: [],
+    subTasks: []
   });
 
+
+  function handleAddSubTask(task: string) {
+    setTaskState(prevState => {
+      const newSubTask: SubTaskData = {
+        text: task,
+        taskId: prevState.selectedTaskId ?? 0,
+        subTaskId: Math.random()
+      };
+      return {
+        ...prevState,
+        subTasks: [...prevState.subTasks, newSubTask]
+      };
+    });
+  }
+
+  function handleDeleteSubTask(subTaskId: number) {
+    setTaskState(prevState => {
+      return {
+        ...prevState,
+        subTasks: prevState.subTasks.filter((task) => task.subTaskId !== subTaskId)
+      };
+    });
+  }
   function handleStartAddTask() {
     setTaskState(prevState => {
       return {
@@ -29,7 +54,6 @@ function App() {
   }
 
   function handleAddTask(taskData: TaskData) {
-
     setTaskState(prevState => {
       const newTask = {
         ...taskData,
@@ -63,25 +87,26 @@ function App() {
     });
   }
 
-  function handleTaskDelete(taskId: number) {
-
-    const index = taskState.tasks.findIndex(task => task.id == taskId);
-
-    // If the item is found, remove it from the array
-    if (index !== -1) {
-      taskState.tasks.splice(index, 1);
-    }
+  function handleTaskDelete() {
     setTaskState(prevState => {
       return {
         ...prevState,
-        selectedTaskId: taskId,
+        selectedTaskId: undefined,
+        tasks: prevState.tasks.filter((task) => task.id !== prevState.selectedTaskId)
       };
     });
   }
 
 
   const selectedTask = taskState.tasks.find(task => task.id == taskState.selectedTaskId) ?? new TaskData;
-  let content = <SelectedTask task={selectedTask} OnTaskDelete={handleTaskDelete} />;
+  let content = (
+    <SelectedTask
+      task={selectedTask}
+      OnTaskDelete={handleTaskDelete}
+      OnAddSubTask={handleAddSubTask}
+      OnDeleteSubTask={handleDeleteSubTask}
+      SubTasksData={taskState.subTasks} />)
+
   if (taskState.selectedTaskId === null) {
     content = <NewTask onAdd={handleAddTask} onCancel={handleCancelProject} />
   } else if (taskState.selectedTaskId === undefined) {
